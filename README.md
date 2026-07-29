@@ -86,6 +86,11 @@ git push -u origin main
 - Click **Deploy**
 - Render will build and start your server
 
+### 4. Connect Neon database
+- Create a Neon project and copy the connection string.
+- In Render, add an environment variable named `DATABASE_URL` with your Neon connection string.
+- Your app will automatically create the required tables on startup.
+
 ## How It Works
 
 ### User Flow

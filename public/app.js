@@ -79,7 +79,9 @@ const loadSessions = async () => {
 
   let saved = [];
   try {
-    const resp = await fetch(`/api/sessions/${encodeURIComponent(currentUser.username)}`);
+    const resp = await fetch(`/api/sessions/${encodeURIComponent(currentUser.username)}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('waHubAuthToken') || ''}` }
+    });
     if (resp.ok) {
       saved = await resp.json();
       localStorage.setItem(storageKey(currentUser.username), JSON.stringify(saved));
@@ -145,10 +147,42 @@ const updateProfileDisplay = () => {
   userEmailText.textContent = currentUser.email;
 };
 
-const signOut = () => {
-  localStorage.removeItem('waHubCurrentUser');
+const saveAuthSession = (user, token) => {
+  if (!user) {
+    localStorage.removeItem('waHubCurrentUser');
+    localStorage.removeItem('waHubAuthToken');
+    return;
+  }
+
+  localStorage.setItem('waHubCurrentUser', JSON.stringify(user));
+  if (token) {
+    localStorage.setItem('waHubAuthToken', token);
+  } else {
+    localStorage.removeItem('waHubAuthToken');
+  }
+};
+
+const clearAuthSession = () => {
+  saveAuthSession(null);
   currentUser = null;
   updateProfileDisplay();
+};
+
+const signOut = async () => {
+  const token = localStorage.getItem('waHubAuthToken');
+  if (token) {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+    } catch (err) {
+      console.warn('Logout request failed:', err);
+    }
+  }
+
+  clearAuthSession();
   renderPanel('login');
 };
 
@@ -195,24 +229,23 @@ loginForm.addEventListener('submit', async (event) => {
       throw new Error(result.error || (authMode === 'login' ? 'Login failed' : 'Registration failed'));
     }
 
-    if (authMode === 'register') {
-      alert(result.message || 'Account created successfully. You can now log in.');
-      authMode = 'login';
-      authSubmitBtn.textContent = 'Login';
-      authSwitchText.textContent = 'New here?';
-      authToggleBtn.textContent = 'Create account';
-      return;
-    }
-
     currentUser = {
       username: result.username,
       email: result.email || `${result.username}@example.com`
     };
-    localStorage.setItem('waHubCurrentUser', JSON.stringify(currentUser));
+    saveAuthSession(currentUser, result.token);
     updateProfileDisplay();
     renderPanel('dashboard');
     loadSessions();
     updateDashboardStats();
+
+    if (authMode === 'register') {
+      authMode = 'login';
+      authSubmitBtn.textContent = 'Login';
+      authSwitchText.textContent = 'New here?';
+      authToggleBtn.textContent = 'Create account';
+    }
+
     alert(result.message || 'Signed in successfully.');
   } catch (err) {
     alert(err.message);
@@ -243,7 +276,10 @@ linkForm.addEventListener('submit', async (event) => {
   try {
     const response = await fetch('/api/link-session', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('waHubAuthToken') || ''}`
+      },
       body: JSON.stringify({ 
         username: currentUser.username, 
         name: botName,
@@ -284,7 +320,10 @@ saveConfigBtn.addEventListener('click', async (e) => {
   try {
     const resp = await fetch('/api/save-config', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('waHubAuthToken') || ''}`
+      },
       body: JSON.stringify({ username: currentUser.username, sessionId: lastSessionId, config: txt })
     });
     if (!resp.ok) {
@@ -361,7 +400,11 @@ if (botUploadBtn) {
     form.append('botName', fileName);
 
     try {
-      const resp = await fetch('/api/upload-bot', { method: 'POST', body: form });
+      const resp = await fetch('/api/upload-bot', {
+        method: 'POST',
+        body: form,
+        headers: { Authorization: `Bearer ${localStorage.getItem('waHubAuthToken') || ''}` }
+      });
       const result = await resp.json();
       if (!resp.ok) throw new Error(result.error || 'Upload failed');
       alert(result.message || 'Upload successful');
@@ -399,7 +442,11 @@ if (creadUploadBtn) {
       form.append('credentials', file);
       form.append('username', currentUser.username);
       form.append('targetFolder', target);
-      const resp = await fetch('/api/upload-creds', { method: 'POST', body: form });
+      const resp = await fetch('/api/upload-creds', {
+        method: 'POST',
+        body: form,
+        headers: { Authorization: `Bearer ${localStorage.getItem('waHubAuthToken') || ''}` }
+      });
       const result = await resp.json();
       if (!resp.ok) throw new Error(result.error || 'Upload failed');
       alert(result.message || 'Credentials uploaded');
@@ -574,7 +621,10 @@ window.startBot = async (username, sessionId) => {
   try {
     const resp = await fetch('/api/bot-control/start', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('waHubAuthToken') || ''}`
+      },
       body: JSON.stringify({ username })
     });
     const result = await resp.json();
@@ -589,7 +639,10 @@ window.stopBot = async (username, sessionId) => {
   try {
     const resp = await fetch('/api/bot-control/stop', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('waHubAuthToken') || ''}`
+      },
       body: JSON.stringify({ username })
     });
     const result = await resp.json();
@@ -620,7 +673,9 @@ window.deleteBotFile = async (botId) => {
 
 window.checkBotStatus = async (username, sessionId) => {
   try {
-    const resp = await fetch(`/api/bot-control/status/${username}`);
+    const resp = await fetch(`/api/bot-control/status/${username}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('waHubAuthToken') || ''}` }
+    });
     const result = await resp.json();
     const statusEl = document.getElementById(`bot-status-${sessionId}`);
     if (statusEl) {
@@ -637,14 +692,45 @@ window.checkBotStatus = async (username, sessionId) => {
   }
 };
 
-const storedUser = JSON.parse(localStorage.getItem('waHubCurrentUser') || 'null');
-if (storedUser) {
-  currentUser = storedUser;
-  updateProfileDisplay();
-  renderPanel('dashboard');
-  updatePanelViews('dashboard');
-} else {
-  renderPanel('login');
-}
-loadSessions();
+const restoreAuthSession = async () => {
+  const storedUser = JSON.parse(localStorage.getItem('waHubCurrentUser') || 'null');
+  const token = localStorage.getItem('waHubAuthToken');
+
+  if (!storedUser || !token) {
+    clearAuthSession();
+    renderPanel('login');
+    return false;
+  }
+
+  try {
+    const response = await fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      throw new Error('Session expired');
+    }
+
+    const result = await response.json();
+    currentUser = {
+      username: result.username,
+      email: result.email || `${result.username}@example.com`
+    };
+    saveAuthSession(currentUser, token);
+    updateProfileDisplay();
+    renderPanel('dashboard');
+    updatePanelViews('dashboard');
+    return true;
+  } catch (err) {
+    console.warn('Unable to restore auth session:', err);
+    clearAuthSession();
+    renderPanel('login');
+    return false;
+  }
+};
+
+(async () => {
+  await restoreAuthSession();
+  loadSessions();
+})();
 
