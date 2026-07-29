@@ -18,6 +18,11 @@ const botStatusList = document.getElementById('bot-status-list');
 const startBotList = document.getElementById('start-bot-list');
 const linkNewBot = document.getElementById('link-new-bot');
 const loginForm = document.getElementById('login-form');
+const togglePasswordBtn = document.getElementById('toggle-password');
+const passwordInput = document.getElementById('login-password');
+const authToggleBtn = document.getElementById('auth-toggle-btn');
+const authSubmitBtn = document.getElementById('auth-submit-btn');
+const authSwitchText = document.getElementById('auth-switch-text');
 const logoutButton = document.querySelector('.logout');
 const userNameText = document.getElementById('user-name');
 const userEmailText = document.getElementById('user-email');
@@ -147,6 +152,26 @@ const signOut = () => {
   renderPanel('login');
 };
 
+let authMode = 'login';
+
+if (togglePasswordBtn && passwordInput) {
+  togglePasswordBtn.addEventListener('click', () => {
+    const isHidden = passwordInput.type === 'password';
+    passwordInput.type = isHidden ? 'text' : 'password';
+    togglePasswordBtn.textContent = isHidden ? 'Hide' : 'Show';
+    togglePasswordBtn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+  });
+}
+
+if (authToggleBtn && authSubmitBtn && authSwitchText) {
+  authToggleBtn.addEventListener('click', () => {
+    authMode = authMode === 'login' ? 'register' : 'login';
+    authSubmitBtn.textContent = authMode === 'login' ? 'Login' : 'Create account';
+    authSwitchText.textContent = authMode === 'login' ? 'New here?' : 'Already have an account?';
+    authToggleBtn.textContent = authMode === 'login' ? 'Create account' : 'Login instead';
+  });
+}
+
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   const username = document.getElementById('login-username').value.trim();
@@ -158,7 +183,8 @@ loginForm.addEventListener('submit', async (event) => {
   }
 
   try {
-    const response = await fetch('/api/auth/login', {
+    const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -166,7 +192,16 @@ loginForm.addEventListener('submit', async (event) => {
 
     const result = await response.json();
     if (!response.ok) {
-      throw new Error(result.error || 'Login failed');
+      throw new Error(result.error || (authMode === 'login' ? 'Login failed' : 'Registration failed'));
+    }
+
+    if (authMode === 'register') {
+      alert(result.message || 'Account created successfully. You can now log in.');
+      authMode = 'login';
+      authSubmitBtn.textContent = 'Login';
+      authSwitchText.textContent = 'New here?';
+      authToggleBtn.textContent = 'Create account';
+      return;
     }
 
     currentUser = {
@@ -476,6 +511,13 @@ const loadFileManager = async () => {
     const resp = await fetch('/api/list-bots');
     const result = await resp.json();
     if (!resp.ok) throw new Error(result.error || 'Unable to load file packages');
+
+    const targetSelect = document.getElementById('cread-target');
+    if (targetSelect) {
+      targetSelect.innerHTML = '<option value="">Select target bot folder</option>' +
+        result.bots.map(bot => `<option value="${bot.id}">${bot.name}</option>`).join('');
+    }
+
     fileManagerList.innerHTML = result.bots.length
       ? result.bots.map(bot => `
           <div class="file-card">

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WhatsApp Bot Manager | Bot Dashboard</title>
+  <title>Mathithibala | Bot Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -12,7 +12,7 @@
       <div class="brand">
         <div class="brand-icon">💚</div>
         <div>
-          <h1>WA Bot</h1>
+          <h1>Mathithibala</h1>
         </div>
       </div>
       <nav>
@@ -44,17 +44,26 @@
       <section class="content" id="login-panel">
         <div class="card form-card login-card">
           <div class="login-header">
-            <h3>Sign in to WA Bot Manager</h3>
+            <h3>Login to Mathithibala</h3>
             <p>Manage your WhatsApp bot sessions securely.</p>
           </div>
           <form id="login-form">
             <div class="input-group">
-              <input type="text" id="login-username" placeholder="Username" required />
+              <label for="login-username">Username</label>
+              <input type="text" id="login-username" placeholder="Enter your username" required />
             </div>
             <div class="input-group">
-              <input type="password" id="login-password" placeholder="Password" required />
+              <label for="login-password">Password</label>
+              <div class="password-wrap">
+                <input type="password" id="login-password" placeholder="Enter your password" required />
+                <button type="button" id="toggle-password" class="toggle-password-btn" aria-label="Show password">Show</button>
+              </div>
             </div>
-            <button type="submit" class="primary-btn">Sign in</button>
+            <button type="submit" class="primary-btn" id="auth-submit-btn">Login</button>
+            <div class="auth-switch">
+              <span id="auth-switch-text">New here?</span>
+              <button type="button" id="auth-toggle-btn" class="secondary-btn">Create account</button>
+            </div>
           </form>
         </div>
       </section>

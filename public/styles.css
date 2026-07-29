@@ -685,6 +685,47 @@ nav {
   margin-bottom: 8px;
 }
 
+.password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrap input {
+  padding-right: 72px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--wh-green-dark);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.auth-switch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.auth-switch span {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.auth-switch .secondary-btn {
+  padding: 10px 16px;
+  font-size: 0.9rem;
+}
+
 .form-card input,
 .form-card textarea,
 .form-card select {

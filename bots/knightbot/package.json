@@ -1,0 +1,8 @@
+{
+  "name": "mathithibala-bot-template",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@adiwajshing/baileys": "^5.0.0"
+  }
+}

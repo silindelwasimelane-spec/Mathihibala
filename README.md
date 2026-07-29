@@ -103,7 +103,9 @@ WA-Hub/
 ├── server.js          # Express server + API endpoints
 ├── bot-manager.js     # Spawn/manage bot instances
 ├── bots/
-│   ├── knightbot/     # Bot template (Knightbot-MD)
+│   ├── knightbot/     # Bot template with Baileys WhatsApp client
+│   │   ├── main.js
+│   │   └── package.json
 │   └── instances/     # Per-user bot instances
 │       └── <username>/
 │           ├── main.js (copied from template)

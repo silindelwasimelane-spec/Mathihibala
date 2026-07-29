@@ -140,16 +140,36 @@ app.post('/api/auth/login', (req, res) => {
   }
 
   const users = loadUsers();
+  if (!users[safeUsername]) {
+    return res.status(401).json({ error: 'User not found. Please create an account first.' });
+  }
+
+  if (users[safeUsername].password !== password) {
+    return res.status(401).json({ error: 'Invalid username or password.' });
+  }
+
+  return res.json({ username: safeUsername, email: `${safeUsername}@example.com`, message: 'Signed in successfully.' });
+});
+
+app.post('/api/auth/register', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required.' });
+  }
+
+  const safeUsername = sanitizeName(username);
+  if (!safeUsername) {
+    return res.status(400).json({ error: 'Invalid username.' });
+  }
+
+  const users = loadUsers();
   if (users[safeUsername]) {
-    if (users[safeUsername].password !== password) {
-      return res.status(401).json({ error: 'Invalid username or password.' });
-    }
-    return res.json({ username: safeUsername, email: `${safeUsername}@example.com`, message: 'Signed in successfully.' });
+    return res.status(409).json({ error: 'Username already exists. Please log in instead.' });
   }
 
   users[safeUsername] = { password };
   saveUsers(users);
-  return res.json({ username: safeUsername, email: `${safeUsername}@example.com`, message: 'Account created and signed in.' });
+  return res.json({ username: safeUsername, email: `${safeUsername}@example.com`, message: 'Account created successfully. Please log in.' });
 });
 
 app.post('/api/link-session', (req, res) => {
@@ -327,11 +347,50 @@ app.get('/api/list-bots', (req, res) => {
   if (!fs.existsSync(botsDir)) return res.json({ bots: [] });
   try {
     const items = fs.readdirSync(botsDir, { withFileTypes: true });
-    const bots = items.filter((item) => item.isDirectory()).map((item) => ({ name: item.name, type: 'bot folder' }));
+    const bots = items.filter((item) => item.isDirectory()).map((item) => ({ id: item.name, name: item.name, type: 'bot folder' }));
     return res.json({ bots });
   } catch (err) {
     console.error('list bots error', err);
     return res.status(500).json({ error: 'Unable to list bots' });
+  }
+});
+
+app.post('/api/upload-creds', upload.single('credentials'), (req, res) => {
+  const { username, targetFolder } = req.body;
+  if (!username) return res.status(400).json({ error: 'username required' });
+  if (!targetFolder) return res.status(400).json({ error: 'targetFolder required' });
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded. Use field name "credentials".' });
+
+  const targetDir = path.join(__dirname, 'bots', sanitizeName(targetFolder));
+  if (!fs.existsSync(targetDir)) return res.status(404).json({ error: 'Target bot folder not found.' });
+
+  const sessionDir = path.join(targetDir, 'session');
+  if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+
+  const destPath = path.join(sessionDir, 'creds.json');
+  try {
+    fs.renameSync(req.file.path, destPath);
+    return res.json({ success: true, message: 'Credentials uploaded to bot folder.' });
+  } catch (err) {
+    console.error('upload creds error', err);
+    return res.status(500).json({ error: 'Failed saving credentials' });
+  }
+});
+
+app.post('/api/list-bots/delete', express.json(), (req, res) => {
+  const { username, botId } = req.body;
+  if (!username) return res.status(400).json({ error: 'username required' });
+  if (!botId) return res.status(400).json({ error: 'botId required' });
+
+  const targetDir = path.join(__dirname, 'bots', sanitizeName(botId));
+  if (!fs.existsSync(targetDir)) return res.status(404).json({ error: 'Bot folder not found.' });
+
+  try {
+    fs.rmSync(targetDir, { recursive: true, force: true });
+    return res.json({ success: true, message: 'Bot folder deleted.' });
+  } catch (err) {
+    console.error('delete bot folder error', err);
+    return res.status(500).json({ error: 'Failed deleting bot folder.' });
   }
 });
 

@@ -6,6 +6,14 @@ const http = require('http');
 const botsDir = path.join(__dirname, 'bots');
 const instances = {}; // Track running bot instances { username: { process, pid, status } }
 
+function getBotTemplateDir() {
+  const preferred = path.join(botsDir, 'Knightbot-MD-main');
+  const fallback = path.join(botsDir, 'knightbot');
+  if (fs.existsSync(preferred)) return preferred;
+  if (fs.existsSync(fallback)) return fallback;
+  return null;
+}
+
 // Helper: Get user bot working directory
 function getUserBotDir(username) {
   return path.join(botsDir, 'instances', username);
@@ -15,7 +23,11 @@ function getUserBotDir(username) {
 function setupUserSession(username, credsJson) {
   const userBotDir = getUserBotDir(username);
   const sessionDir = path.join(userBotDir, 'session');
-  const botTemplateDir = path.join(botsDir, 'knightbot');
+  const botTemplateDir = getBotTemplateDir();
+  if (!botTemplateDir) {
+    console.error('No bot template folder found in bots/');
+    return false;
+  }
   
   // Copy bot template to user instance if not already there
   if (!fs.existsSync(userBotDir)) {
