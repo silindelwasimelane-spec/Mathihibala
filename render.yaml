@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: wa-hub-dashboard
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    branch: main
+    region: oregon
+    autoDeploy: true
+    buildCommand: npm install --production
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: "3000"
